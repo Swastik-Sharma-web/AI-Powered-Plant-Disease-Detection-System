@@ -149,8 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData();
         formData.append('file', file);
         
-        // Pointing to local FastAPI server
-        fetch('http://127.0.0.1:8000/api/predict', {
+        // Pointing to Hugging Face cloud server
+        fetch('https://swastik1333-plant-disease-detection-system.hf.space/api/predict', {
             method: 'POST',
             body: formData
         })
