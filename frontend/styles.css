@@ -445,6 +445,11 @@ input[type="file"] {
   color: #15803d;
 }
 
+.status-invalid {
+  background: #fef9c3; /* Yellow background */
+  color: #a16207; /* Dark yellow/orange text */
+}
+
 .result-details {
   display: grid;
   grid-template-columns: 1fr 1fr;

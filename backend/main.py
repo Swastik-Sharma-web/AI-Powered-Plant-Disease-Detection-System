@@ -52,15 +52,9 @@ async def api_predict_plant_disease(file: UploadFile = File(...)):
         # and formats the output into a dictionary perfectly matching our PredictionResponse model.
         result_dict = predict_disease(image_stream)
         
-        # If there's an error from predict_disease, format it nicely
+        # Remove extra keys not expected by the Pydantic API response model
         if "error" in result_dict:
-            return PredictionResponse(
-                status="Error",
-                diseaseName="Prediction Failed",
-                confidenceScore=0.0,
-                confidencePercent="0%",
-                advice=f"Error executing prediction model: {result_dict['error']}"
-            )
+            del result_dict["error"]
             
         return PredictionResponse(**result_dict)
         

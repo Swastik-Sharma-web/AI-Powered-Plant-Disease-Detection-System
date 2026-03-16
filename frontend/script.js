@@ -149,8 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData();
         formData.append('file', file);
         
-        // Pointing to Hugging Face cloud server
-        fetch('https://swastik1333-plant-disease-detection-system.hf.space/api/predict', {
+        // Pointing to local FastAPI server
+        fetch('http://127.0.0.1:8000/api/predict', {
             method: 'POST',
             body: formData
         })
@@ -174,10 +174,17 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingSpinner.style.display = 'none';
         resultPanel.style.display = 'block';
 
+        // Clear any old inline styles that might persist across uploads
+        resStatusText.style.background = '';
+        resStatusText.style.color = '';
+
         // Update DOM
         if (data.status.toLowerCase() === 'healthy') {
             resStatusText.className = 'status-badge status-healthy';
             resStatusText.innerHTML = '<i class="fa-solid fa-check-circle"></i> Healthy';
+        } else if (data.status.toLowerCase() === 'invalid' || data.status.toLowerCase() === 'unknown' || data.status.toLowerCase() === 'error') {
+            resStatusText.className = 'status-badge status-invalid';
+            resStatusText.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Try Again';
         } else {
             resStatusText.className = 'status-badge status-diseased';
             resStatusText.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Diseased';
