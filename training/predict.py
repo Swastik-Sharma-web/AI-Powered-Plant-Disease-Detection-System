@@ -5,6 +5,7 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.models import load_model
 from PIL import Image
+import cv2
 
 # Setup Paths
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -56,6 +57,48 @@ def load_class_names():
             print("Warning: Training Dataset dir not found. Using default CLASS_NAMES list.")
     return CLASS_NAMES
 
+def is_leaf_detected(image_file):
+    """
+    OpenCV HSV Color masking to verify if the uploaded image is actually a plant leaf.
+    Checks for minimum thresholds of Green and Brown/Yellow.
+    """
+    try:
+        # Save stream state
+        current_pos = image_file.tell()
+        image_file.seek(0)
+        
+        # Read to memory for cv2
+        file_bytes = np.asarray(bytearray(image_file.read()), dtype=np.uint8)
+        img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+        
+        # Restore stream for Keras
+        image_file.seek(current_pos)
+        
+        if img is None:
+            return False
+            
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        
+        # Green mask
+        lower_green = np.array([25, 40, 40])
+        upper_green = np.array([90, 255, 255])
+        mask_green = cv2.inRange(hsv, lower_green, upper_green)
+        
+        # Brown/Yellow mask
+        lower_brown = np.array([10, 40, 40])
+        upper_brown = np.array([30, 255, 255])
+        mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
+        
+        # Calculate percentage
+        green_ratio = cv2.countNonZero(mask_green) / (img.shape[0] * img.shape[1])
+        brown_ratio = cv2.countNonZero(mask_brown) / (img.shape[0] * img.shape[1])
+        
+        # A leaf should have some green, OR a very high amount of brown/yellow
+        return green_ratio > 0.05 or (green_ratio > 0.01 and brown_ratio > 0.1)
+    except Exception as e:
+        print(f"Leaf check error: {e}")
+        return True # Fallback to true if parsing fails so the AI can still try
+
 def predict_disease(image_file):
     """
     Takes an uploaded image file (bytes), preprocesses it, 
@@ -92,6 +135,30 @@ def predict_disease(image_file):
         friendly_disease_name = predicted_class_name.replace("_", " ").title()
         if is_healthy:
             friendly_disease_name = "None"
+            
+        # OOD Check 1: Explicit Non-Leaf Rejection
+        if not is_leaf_detected(image_file):
+            return {
+                "error": "No leaf detected.",
+                "diseaseName": "Prediction Failed",
+                "confidenceScore": 0.0,
+                "confidencePercent": "0%",
+                "status": "Invalid",
+                "advice": "The system could not detect a leaf in this image. Please upload a clear photo of a plant leaf."
+            }
+            
+        # OOD Check 2: Low Confidence Rejection Threshold
+        # Since this model was heavily biased and fast-trained on specifically leaves, 
+        # random desk objects usually score under 0.60
+        if confidence < 0.60:
+             return {
+                "error": "Unrecognized object.",
+                "diseaseName": "Unrecognized Object",
+                "confidenceScore": round(confidence, 4),
+                "confidencePercent": f"{int(confidence * 100)}%",
+                "status": "Unknown",
+                "advice": "The AI is not confident this is a plant leaf. Please ensure the image is a clear, focused picture of a single leaf."
+            }
         
         # Find closest matching advice from DB, default to generic
         advice = ADVICE_DB.get(friendly_disease_name, 
