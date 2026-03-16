@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error connecting to prediction server. Make sure the FastAPI backend is running.');
+            alert('Error connecting to prediction server.\n\nThe AI backend might still be loading into memory (it takes 15-30 seconds on startup), or it may have crashed.\n\nPlease check the black terminal window for errors, and try uploading again in a few seconds!');
             loadingSpinner.style.display = 'none';
         });
     }

@@ -14,10 +14,11 @@ if %errorlevel% neq 0 (
 
 :: Start the FastAPI backend server in a new window so it stays running
 echo [1/2] Starting the AI Backend Server on port 8000...
-start "AI Backend Server" cmd /c "cd /d %~dp0 && python backend/main.py"
+start "AI Backend Server" cmd /k "cd /d "%~dp0" && python backend/main.py"
 
-:: Wait a few seconds for the server to initialize
-timeout /t 3 /nobreak >nul
+:: Wait 15 seconds for the server and TensorFlow model to initialize into memory
+echo Please wait about 15 seconds while the AI model loads into memory...
+timeout /t 15 /nobreak >nul
 
 :: Open the frontend in the default web browser
 echo [2/2] Launching the Frontend Web Interface...
